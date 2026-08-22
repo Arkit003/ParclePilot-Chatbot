@@ -28,3 +28,8 @@ backend/data/chroma/
 
 #logs
 /logs
+# Generated database
+data/*.db
+
+# Generated Chroma index
+data/chroma/

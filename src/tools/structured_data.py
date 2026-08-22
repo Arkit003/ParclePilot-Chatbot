@@ -9,7 +9,7 @@ from typing import Optional,Any
 from src.database.database import Database
 from src.database.repositories.accounts import AccountRepository
 from src.database.repositories.orders import OrderRepository
-from src.tools.schema import CancellationResult,ServiceCreditResult,SLATargetResult
+from schemas.structured_data_schema import CancellationResult,ServiceCreditResult,SLATargetResult
 from src.tools import (SLA_DEFAULTS,
                        DEFAULT_CANCELLATION_FEE,
                        DEFAULT_CANCELLATION_WINDOW_MINUTES,
