@@ -110,3 +110,6 @@ channel
 assigned_to
 last_customer_message_at
 historical_resolution
+
+## running tests
+    python -m pytest tests/test_structured_data.py -v

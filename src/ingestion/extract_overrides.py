@@ -71,7 +71,7 @@ def extract_account_id(text: str) -> str:
 
 def extract_customer_name(text: str) -> str:
     match = re.search(
-        r"Customer:\s*(.+)",
+        r"Customer:\s*(.*?)(?=\s+Plan:|\s+Term:|\s+Status:|\n|$)",
         text,
         re.IGNORECASE,
     )
@@ -153,19 +153,19 @@ def extract_northstar_overrides(
     # Cancellation
     
 
-    cancellation_waiver = (
-        "Northstar may cancel any BOOKED shipment before pickup "
-        "with no cancellation fee"
-    )
+    cancellation_waiver = re.search(
+    r"Northstar\s+may\s+cancel\s+any\s+BOOKED\s+shipment\s+"
+    r"before\s+pickup\s+with\s+no\s+cancellation\s+fee",
+    text,
+    re.IGNORECASE,
+)
 
-    if cancellation_waiver.lower() in text.lower():
+    if cancellation_waiver:
         overrides["cancellation"] = {
             "booked_before_pickup": {
                 "fee_inr": 0,
                 "fee_waived": True,
-                "condition": (
-                    "BOOKED shipment before pickup"
-                ),
+                "condition": "BOOKED shipment before pickup",
             }
         }
 
@@ -222,16 +222,15 @@ def extract_lumenworks_overrides(text: str) -> dict[str, Any]:
     
 
     threshold_match = re.search(
-        r"more than\s+(\d+)\s+hours\s+past",
-        text,
-        re.IGNORECASE,
-    )
-
+    r"more than\s+(\d+)\s+hours?\s+past",
+    text,
+    re.IGNORECASE,
+)
     credit_match = re.search(
-        r"fixed INR\s*([\d,]+)\s*service credit",
-        text,
-        re.IGNORECASE,
-    )
+    r"fixed\s+INR\s*([\d,]+)\s+(?:service\s+)?credit",
+    text,
+    re.IGNORECASE,
+)
 
     service_credit: dict[str, Any] = {}
 

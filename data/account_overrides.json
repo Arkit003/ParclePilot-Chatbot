@@ -1,7 +1,7 @@
 {
   "ACCT-001": {
     "account_id": "ACCT-001",
-    "customer_name": "Northstar Logistics Term: 1 January 2026 to 31 December 2026 Status: ACTIVE",
+    "customer_name": "Northstar Logistics",
     "agreement_file": "05_Northstar_Logistics_Enterprise_Agreement.pdf",
     "status": "ACTIVE",
     "overrides": {
@@ -24,7 +24,7 @@
   },
   "ACCT-002": {
     "account_id": "ACCT-002",
-    "customer_name": "LumenWorks Plan: Growth Term: 1 March 2026 to 28 February 2027 Status: ACTIVE",
+    "customer_name": "LumenWorks",
     "agreement_file": "06_LumenWorks_Service_Agreement.pdf",
     "status": "ACTIVE",
     "overrides": {
@@ -41,6 +41,7 @@
       },
       "service_credit": {
         "delay_threshold_hours": 4,
+        "fixed_credit_inr": 300,
         "requires_carrier_fault": true,
         "requires_no_customer_fault": true,
         "replaces_default_sop": true
