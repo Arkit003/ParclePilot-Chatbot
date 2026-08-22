@@ -1,14 +1,38 @@
 from __future__ import annotations
 
+import pytest
 from dataclasses import dataclass
 
 from src.agent.loop import AgentLoop
+from src.agent.guardrails import RequestContext
+from src.agent.guardrails import (
+    GuardrailEngine,
+    RequestContext,
+)
+from src.agent.guardrails import GuardrailViolation
 
 
-# ---------------------------------------------------------
 # Mock OpenAI-style response objects
-# ---------------------------------------------------------
 
+TEST_CONTEXT = RequestContext(
+    user_id="test-user",
+    role="support_agent",
+    account_id=None,
+    request_id="test-request",
+)
+class BlockingGuardrails(GuardrailEngine):
+
+    def check_input(
+        self,
+        user_message,
+        context,
+    ):
+        from src.agent.guardrails import GuardrailResult
+
+        return GuardrailResult(
+            allowed=False,
+            reason="Blocked by test guardrail.",
+        )
 
 @dataclass
 class MockFunction:
@@ -38,9 +62,9 @@ class MockResponse:
     choices: list[MockChoice]
 
 
-# ---------------------------------------------------------
+
 # Mock Chat Completions
-# ---------------------------------------------------------
+
 
 
 class MockCompletions:
@@ -71,9 +95,9 @@ class MockLLMClient:
         self.chat = MockChat(responses)
 
 
-# ---------------------------------------------------------
+
 # Fake tool
-# ---------------------------------------------------------
+
 
 
 def fake_check_cancellation(
@@ -85,6 +109,7 @@ def fake_check_cancellation(
         "allowed": True,
         "cancellation_fee_inr": 0,
         "request_time": request_time,
+        "source": "Northstar Logistics Enterprise Agreement",
     }
 
 def test_agent_tool_call_then_final_answer(
@@ -152,7 +177,8 @@ def test_agent_tool_call_then_final_answer(
                     "without a fee?"
                 ),
             }
-        ]
+        ],
+        context=TEST_CONTEXT,
     )
 
     assert result == (
@@ -208,7 +234,8 @@ def test_unknown_tool_returns_error_to_llm():
                 "role": "user",
                 "content": "Do something.",
             }
-        ]
+        ],
+        context=TEST_CONTEXT,
     )
 
     assert result == (
@@ -263,7 +290,8 @@ def test_invalid_tool_arguments():
                 "role": "user",
                 "content": "Check cancellation.",
             }
-        ]
+        ],
+        context=TEST_CONTEXT,
     )
 
     assert result == (
@@ -336,7 +364,8 @@ def test_tool_exception_is_returned_to_llm(
                 "role": "user",
                 "content": "Check cancellation.",
             }
-        ]
+        ],
+        context=TEST_CONTEXT,
     )
 
     assert result == (
@@ -396,7 +425,8 @@ def test_agent_stops_after_five_iterations(
                 "role": "user",
                 "content": "Check this.",
             }
-        ]
+        ],
+        context=TEST_CONTEXT,
     )
 
     assert result == (
@@ -408,3 +438,40 @@ def test_agent_stops_after_five_iterations(
     assert len(
         client.chat.completions.calls
     ) == 5
+
+def test_agent_stops_when_input_guardrail_blocks():
+
+    responses = []
+
+    client = MockLLMClient(responses)
+
+    agent = AgentLoop(
+        llm_client=client,
+        model="mock-model",
+        guardrails=BlockingGuardrails(),
+    )
+
+    context = RequestContext(
+        user_id="test-user",
+        role="customer",
+        account_id="ACCT-001",
+        request_id="req-blocked",
+    )
+
+    with pytest.raises(
+        GuardrailViolation,
+        match="Blocked by test guardrail",
+    ):
+        agent.run(
+            messages=[
+                {
+                    "role": "user",
+                    "content": "Do something.",
+                }
+            ],
+            context=context,
+        )
+
+    assert len(
+        client.chat.completions.calls
+    ) == 0

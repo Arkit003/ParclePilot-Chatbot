@@ -166,4 +166,53 @@ TOOL_DEFINITIONS: list[dict[str, Any]] = [
             },
         },
     },
+    {
+    "type": "function",
+    "function": {
+        "name": "preview_action",
+        "description": (
+            "Prepare a state-changing support action for "
+            "user confirmation. This does not execute the action."
+        ),
+        "parameters": {
+            "type": "object",
+            "properties": {
+                "action_type": {
+                    "type": "string",
+                    "enum": [
+                        "escalation",
+                        "ticket_update",
+                        "follow_up",
+                    ],
+                },
+                "account_id": {
+                    "type": "string",
+                },
+                "reason": {
+                    "type": "string",
+                },
+                "ticket_id": {
+                    "type": ["string", "null"],
+                },
+                "order_id": {
+                    "type": ["string", "null"],
+                },
+                "amount_inr": {
+                    "type": ["integer", "null"],
+                    "minimum": 0,
+                },
+                "details": {
+                    "type": "object",
+                },
+            },
+            "required": [
+                "action_type",
+                "account_id",
+                "reason",
+            ],
+            "additionalProperties": False,
+            },
+        },
+    },
+    
 ]

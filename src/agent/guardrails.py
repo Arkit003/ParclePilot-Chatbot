@@ -65,6 +65,11 @@ class GuardrailEngine:
         "get_sla_target",
     }
 
+    ACTION_TOOLS = {
+    "preview_action",
+    "execute_action",
+}
+
     def __init__(self) -> None:
         database = Database()
 
@@ -153,6 +158,21 @@ class GuardrailEngine:
             return GuardrailResult(
                 allowed=False,
                 reason=f"Unknown or unauthorized tool: {tool_name}",
+            )
+        if (
+            tool_name in self.ACTION_TOOLS
+            and context.role
+            not in {
+                "support_agent",
+                "manager",
+            }
+        ):
+            return GuardrailResult(
+                allowed=False,
+                reason=(
+                    "This role is not authorized "
+                    "to perform support actions."
+                ),
             )
 
 
