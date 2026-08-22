@@ -1,0 +1,50 @@
+{
+  "ACCT-001": {
+    "account_id": "ACCT-001",
+    "customer_name": "Northstar Logistics Term: 1 January 2026 to 31 December 2026 Status: ACTIVE",
+    "agreement_file": "05_Northstar_Logistics_Enterprise_Agreement.pdf",
+    "status": "ACTIVE",
+    "overrides": {
+      "sla": {
+        "P1": "15 minutes, 24x7",
+        "P2": "1 hour",
+        "P3": "8 business hours"
+      },
+      "cancellation": {
+        "booked_before_pickup": {
+          "fee_inr": 0,
+          "fee_waived": true,
+          "condition": "BOOKED shipment before pickup"
+        }
+      },
+      "service_credit": {
+        "monthly_cap_inr": 5000
+      }
+    }
+  },
+  "ACCT-002": {
+    "account_id": "ACCT-002",
+    "customer_name": "LumenWorks Plan: Growth Term: 1 March 2026 to 28 February 2027 Status: ACTIVE",
+    "agreement_file": "06_LumenWorks_Service_Agreement.pdf",
+    "status": "ACTIVE",
+    "overrides": {
+      "sla": {
+        "P1": "2 business hours",
+        "P2": "4 business hours",
+        "P3": "2 business days"
+      },
+      "cancellation": {
+        "booked_before_pickup": {
+          "fee_waived": false,
+          "use_default_sop": true
+        }
+      },
+      "service_credit": {
+        "delay_threshold_hours": 4,
+        "requires_carrier_fault": true,
+        "requires_no_customer_fault": true,
+        "replaces_default_sop": true
+      }
+    }
+  }
+}
