@@ -113,3 +113,20 @@ historical_resolution
 
 ## running tests
     python -m pytest tests/test_structured_data.py -v
+
+## our re-act loop 
+User  
+ ↓  
+agent.loop  
+ ↓  
+LLM client  
+ ↓  
+tool call?  
+ ├── no → final response  
+ └── yes  
+      ↓  
+ tool registry  
+      ↓  
+ tool result  
+      ↓  
+ back to LLM  
