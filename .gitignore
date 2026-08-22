@@ -25,3 +25,6 @@ backend/data/chroma/
 # Test/cache
 .pytest_cache/
 .coverage
+
+#logs
+/logs
