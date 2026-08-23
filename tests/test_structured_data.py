@@ -212,3 +212,62 @@ def test_axis_uses_default_enterprise_sla():
     )
 
     assert result.target == "30 minutes, 24x7"
+
+def test_standard_plan_returns_full_sla_matrix():
+
+    result = get_sla_target(
+        plan="Standard",
+    )
+
+    assert result.plan == "Standard"
+    assert result.severity is None
+
+    assert result.targets == {
+        "P1": "4 business hours",
+        "P2": "1 business day",
+        "P3": "2 business days",
+    }
+
+
+def test_standard_plan_p2_returns_single_target():
+
+    result = get_sla_target(
+        plan="Standard",
+        severity="P2",
+    )
+
+    assert result.target == "1 business day"
+
+
+def test_northstar_returns_full_override_matrix():
+
+    result = get_sla_target(
+        account_id="ACCT-001",
+    )
+
+    assert result.targets == {
+        "P1": "15 minutes, 24x7",
+        "P2": "1 hour",
+        "P3": "8 business hours",
+    }
+
+
+def test_account_and_plan_cannot_both_be_provided():
+
+    with pytest.raises(
+        ValueError,
+        match="either account_id or plan",
+    ):
+        get_sla_target(
+            account_id="ACCT-001",
+            plan="Enterprise",
+        )
+
+
+def test_sla_requires_account_or_plan():
+
+    with pytest.raises(
+        ValueError,
+        match="Either account_id or plan",
+    ):
+        get_sla_target()

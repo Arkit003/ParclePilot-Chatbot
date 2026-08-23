@@ -21,7 +21,7 @@ def test_lumenworks_customer_exists():
 
 
 def test_support_agent_has_no_account_scope():
-    user = MOCK_USERS["support-agent"]
+    user = MOCK_USERS["rohit"]
 
     assert user.role == "support_agent"
     assert user.account_id is None

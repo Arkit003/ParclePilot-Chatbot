@@ -1,8 +1,8 @@
 from __future__ import annotations
 
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter, HTTPException, Request
 
-from src.agent.guardrails import RequestContext
+from src.backend.auth import build_request_context
 from src.tools.actions import execute_action
 from src.schemas.actions_schema import (
     ExecuteActionInput,
@@ -22,23 +22,19 @@ router = APIRouter(
 )
 def execute_pending_action(
     confirmation_id: str,
+    request: Request,
     confirmed: bool,
-):
-    """
-    Execute a previously previewed action after
-    explicit user confirmation.
-    """
+) -> ExecuteActionResult:
 
-    # Temporary mocked identity.
-    #
-    # Later this will come from auth middleware.
-    context = RequestContext(
-        user_id="mock-user",
-        role="support_agent",
-        account_id=None,
-        request_id="mock-request",
-        dataset_snapshot="2026-08-16 11:00",
-    )
+    # Resolve identity from the trusted request context.
+    try:
+        user, _ = build_request_context(request)
+
+    except ValueError as exc:
+        raise HTTPException(
+            status_code=401,
+            detail=str(exc),
+        ) from exc
 
     try:
         result = execute_action(
@@ -46,8 +42,8 @@ def execute_pending_action(
                 confirmation_id=confirmation_id,
                 confirmed=confirmed,
             ),
-            acting_role=context.role,
-            acting_user_id=context.user_id,
+            acting_role=user.role,
+            acting_user_id=user.user_id,
         )
 
         return result

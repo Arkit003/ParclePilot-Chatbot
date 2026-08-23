@@ -1,3 +1,4 @@
+
 from __future__ import annotations
 
 import logging
@@ -14,6 +15,7 @@ logger = logging.getLogger(__name__)
 
 
 # Identity / request context
+
 
 
 @dataclass(frozen=True)
@@ -51,6 +53,7 @@ class GuardrailViolation(Exception):
 # Guardrail engine
 
 
+
 class GuardrailEngine:
 
     VALID_ROLES = {
@@ -59,6 +62,7 @@ class GuardrailEngine:
         "manager",
     }
 
+    # Read / deterministic tools
     READ_TOOLS = {
         "doc_search",
         "check_cancellation",
@@ -66,10 +70,12 @@ class GuardrailEngine:
         "get_sla_target",
     }
 
+    # Only preview is available to the normal agent loop.
+    # execute_action() should be called through the
+    # explicit confirmation endpoint.
     ACTION_TOOLS = {
-    "preview_action",
-    "execute_action",
-}
+        "preview_action",
+    }
 
     def __init__(self) -> None:
         database = Database()
@@ -82,7 +88,7 @@ class GuardrailEngine:
             database
         )
 
-
+ 
     # 1. INPUT CHECK
 
 
@@ -94,16 +100,22 @@ class GuardrailEngine:
         """
         Basic request-level sanity checks.
 
-        This is NOT a security system by itself.
-        It is the first hook before agent execution.
+        This is not the authorization layer itself.
+        It is the first guardrail before agent execution.
         """
 
+  
+        # Empty message
+  
         if not user_message.strip():
             return GuardrailResult(
                 allowed=False,
                 reason="User message cannot be empty.",
             )
 
+  
+        # Role validation
+  
         if context.role not in self.VALID_ROLES:
             return GuardrailResult(
                 allowed=False,
@@ -112,11 +124,18 @@ class GuardrailEngine:
                 ),
             )
 
+
+        # Request ID
+
+
         if not context.request_id.strip():
             return GuardrailResult(
                 allowed=False,
                 reason="Missing request ID.",
             )
+
+
+ 
 
         if context.role == "customer":
             if not context.account_id:
@@ -141,8 +160,7 @@ class GuardrailEngine:
         )
 
 
-    # 2. PRE-TOOL CHECK
-    
+
 
     def check_pre_tool(
         self,
@@ -151,15 +169,32 @@ class GuardrailEngine:
         context: RequestContext,
     ) -> GuardrailResult:
         """
-        Validate whether this identity is allowed to
-        execute the requested tool with these arguments.
+        Validate whether the authenticated identity is
+        allowed to execute the requested tool.
         """
 
-        if tool_name not in self.READ_TOOLS:
+ 
+        # Tool authorization
+ 
+
+        allowed_tools = (
+            self.READ_TOOLS
+            | self.ACTION_TOOLS
+        )
+
+        if tool_name not in allowed_tools:
             return GuardrailResult(
                 allowed=False,
-                reason=f"Unknown or unauthorized tool: {tool_name}",
+                reason=(
+                    f"Unknown or unauthorized tool: "
+                    f"{tool_name}"
+                ),
             )
+
+
+        # Action authorization
+
+
         if (
             tool_name in self.ACTION_TOOLS
             and context.role
@@ -177,7 +212,55 @@ class GuardrailEngine:
             )
 
 
-        # Customer: enforce account scope
+        # CUSTOMER-SPECIFIC SLA SCOPING
+   
+
+        if (
+            context.role == "customer"
+            and tool_name == "get_sla_target"
+        ):
+            requested_account = arguments.get(
+                "account_id"
+            )
+
+            # If the model didn't provide an account,
+            # force the authenticated account.
+            if requested_account is None:
+
+                arguments["account_id"] = (
+                    context.account_id
+                )
+
+                # Customer cannot turn this into a
+                # global plan-level query.
+                arguments["plan"] = None
+
+            # If the model provided an account, it must
+            # match the authenticated account.
+            elif (
+                requested_account
+                != context.account_id
+            ):
+                logger.warning(
+                    "SLA account-scope violation | "
+                    "request_id=%s | "
+                    "context_account=%s | "
+                    "requested_account=%s",
+                    context.request_id,
+                    context.account_id,
+                    requested_account,
+                )
+
+                return GuardrailResult(
+                    allowed=False,
+                    reason=(
+                        "Customer SLA queries must use "
+                        "the authenticated account."
+                    ),
+                )
+
+
+        # GENERAL CUSTOMER ACCOUNT SCOPING
 
 
         if context.role == "customer":
@@ -195,9 +278,12 @@ class GuardrailEngine:
                 != context.account_id
             ):
                 logger.warning(
-                    "Account-scope violation | request_id=%s | "
-                    "role=%s | context_account=%s | "
-                    "requested_account=%s | tool=%s",
+                    "Account-scope violation | "
+                    "request_id=%s | "
+                    "role=%s | "
+                    "context_account=%s | "
+                    "requested_account=%s | "
+                    "tool=%s",
                     context.request_id,
                     context.role,
                     context.account_id,
@@ -208,14 +294,14 @@ class GuardrailEngine:
                 return GuardrailResult(
                     allowed=False,
                     reason=(
-                        "Customer is not authorized to "
-                        "access another account."
+                        "Customer is not authorized "
+                        "to access another account."
                     ),
                 )
 
 
-        # Customer + doc_search
-
+        # CUSTOMER DOCUMENT SEARCH
+ 
 
         if (
             context.role == "customer"
@@ -225,14 +311,29 @@ class GuardrailEngine:
                 "account_id"
             )
 
-            # The model doesn't get to choose a different
-            # account. We enforce the authenticated account.
+            # Force authenticated account scope.
             if requested_account is None:
+
                 arguments["account_id"] = (
                     context.account_id
                 )
 
-            elif requested_account != context.account_id:
+            # Reject attempts to search another
+            # customer's documents.
+            elif (
+                requested_account
+                != context.account_id
+            ):
+                logger.warning(
+                    "Document-search account violation | "
+                    "request_id=%s | "
+                    "context_account=%s | "
+                    "requested_account=%s",
+                    context.request_id,
+                    context.account_id,
+                    requested_account,
+                )
+
                 return GuardrailResult(
                     allowed=False,
                     reason=(
@@ -242,7 +343,7 @@ class GuardrailEngine:
                 )
 
 
-        # Deprecated retrieval
+        # DEPRECATED DOCUMENT RETRIEVAL
 
 
         if (
@@ -252,6 +353,12 @@ class GuardrailEngine:
                 False,
             )
         ):
+            logger.info(
+                "Deprecated document retrieval requested | "
+                "request_id=%s",
+                context.request_id,
+            )
+
             return GuardrailResult(
                 allowed=True,
                 reason=(
@@ -263,8 +370,10 @@ class GuardrailEngine:
             )
 
         logger.info(
-            "Pre-tool guardrail passed | request_id=%s | "
-            "tool=%s | role=%s",
+            "Pre-tool guardrail passed | "
+            "request_id=%s | "
+            "tool=%s | "
+            "role=%s",
             context.request_id,
             tool_name,
             context.role,
@@ -275,7 +384,7 @@ class GuardrailEngine:
         )
 
 
-    # Account resolution
+    # ACCOUNT RESOLUTION
 
 
     def _resolve_tool_account_id(
@@ -283,21 +392,30 @@ class GuardrailEngine:
         tool_name: str,
         arguments: dict[str, Any],
     ) -> str | None:
+        """
+        Resolve the account associated with a tool call.
+        """
 
-        # Tools that directly specify an account.
+   
+        # Direct account-based tools
+    
+
         if tool_name == "get_sla_target":
             return arguments.get("account_id")
 
         if tool_name == "doc_search":
             return arguments.get("account_id")
 
-        # Order-based tools need us to resolve
-        # the account from the order.
+        # Order-based tools
+  
+
         if tool_name in {
             "check_cancellation",
             "check_service_credit",
         }:
-            order_id = arguments.get("order_id")
+            order_id = arguments.get(
+                "order_id"
+            )
 
             if not order_id:
                 return None
@@ -313,9 +431,15 @@ class GuardrailEngine:
 
             return order["account_id"]
 
+
+        # Action tools
+
+
+        if tool_name == "preview_action":
+            return arguments.get("account_id")
+
         return None
 
- 
     # 3. POST-TOOL CHECK
 
 
@@ -327,12 +451,11 @@ class GuardrailEngine:
         context: RequestContext,
     ) -> GuardrailResult:
         """
-        Validate that the tool result is safe to pass
-        back into the agent.
+        Validate that a tool result is safe to pass
+        back to the agent.
         """
 
-
-        # Convert result into a dictionary where possible
+        # Normalize result
 
 
         if hasattr(result, "model_dump"):
@@ -349,9 +472,9 @@ class GuardrailEngine:
                 "value": result
             }
 
-
-        # Deprecated source protection
-
+     
+        # Source/status information
+    
 
         status = result_data.get(
             "status"
@@ -361,7 +484,11 @@ class GuardrailEngine:
             "source"
         )
 
+     
+
+
         if status == "DEPRECATED":
+
             logger.warning(
                 "Deprecated tool result blocked | "
                 "request_id=%s | tool=%s",
@@ -376,23 +503,36 @@ class GuardrailEngine:
                 ),
             )
 
-        # If the tool exposes source metadata as text,
-        # reject clearly deprecated references.
+
+ 
+
         if (
             isinstance(source, str)
-            and "DEPRECATED" in source.upper()
+            and "DEPRECATED"
+            in source.upper()
         ):
+            logger.warning(
+                "Deprecated source blocked | "
+                "request_id=%s | "
+                "tool=%s | source=%s",
+                context.request_id,
+                tool_name,
+                source,
+            )
+
             return GuardrailResult(
                 allowed=False,
                 reason=(
-                    "Tool result references a deprecated "
-                    "source."
+                    "Tool result references a "
+                    "deprecated source."
                 ),
             )
 
         logger.info(
-            "Post-tool guardrail passed | request_id=%s | "
-            "tool=%s | source=%s",
+            "Post-tool guardrail passed | "
+            "request_id=%s | "
+            "tool=%s | "
+            "source=%s",
             context.request_id,
             tool_name,
             source,
@@ -417,22 +557,26 @@ class GuardrailEngine:
         tool_results: list[dict[str, Any]],
     ) -> GuardrailResult:
         """
-        Validate the final answer before returning it.
-
-        The first version focuses on:
-        - non-empty response
-        - no fabricated confidence markers
-        - evidence presence for tool-backed answers
+        Validate the final response before returning it
+        to the user.
         """
+
+
+        # Empty response
+  
 
         if not answer.strip():
             return GuardrailResult(
                 allowed=False,
-                reason="Agent produced an empty answer.",
+                reason=(
+                    "Agent produced an empty answer."
+                ),
             )
 
-        # If tools were used, we expect some source
-        # evidence to be available.
+ 
+        # Tool-backed responses need evidence
+ 
+
         if tool_results:
 
             sources = [
@@ -451,7 +595,8 @@ class GuardrailEngine:
                 )
 
         logger.info(
-            "Output guardrail passed | request_id=%s",
+            "Output guardrail passed | "
+            "request_id=%s",
             context.request_id,
         )
 

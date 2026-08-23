@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 
-
+from pydantic import BaseModel, Field
 
 
 
@@ -37,12 +37,37 @@ class ServiceCreditResult:
 
     requires_manager_approval: bool = False
 
+class GetSLATargetInput(BaseModel):
+    account_id: str | None = Field(
+        default=None,
+        description=(
+            "ParcelPilot account ID. Use this when the question "
+            "is about a specific customer account."
+        ),
+    )
 
-@dataclass
-class SLATargetResult:
-    account_id: str
+    plan: str | None = Field(
+        default=None,
+        description=(
+            "ParcelPilot plan. Use this for plan-level default "
+            "SLA questions."
+        ),
+    )
+
+    severity: str | None = Field(
+        default=None,
+        description=(
+            "Severity P1, P2, or P3. Omit this to return "
+            "the complete P1/P2/P3 SLA matrix."
+        ),
+    )
+from pydantic import BaseModel
+
+
+class SLATargetResult(BaseModel):
+    account_id: str | None = None
     plan: str
-    severity: str
-
-    target: str
+    severity: str | None = None
+    target: str | None = None
+    targets: dict[str, str] | None = None
     source: str

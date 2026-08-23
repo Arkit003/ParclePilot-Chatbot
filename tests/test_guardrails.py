@@ -152,7 +152,10 @@ def test_customer_cannot_access_other_account_sla(
     )
 
     assert result.allowed is False
-    assert "another account" in result.reason.lower()
+    assert (
+        "authenticated account"
+        in result.reason.lower()
+    )
 
 
 def test_customer_doc_search_is_scoped_to_own_account(

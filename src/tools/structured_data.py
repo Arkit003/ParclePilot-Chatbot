@@ -435,18 +435,27 @@ def check_service_credit(
 
 # SLA targets
 
-def get_sla_target(account_id: str,severity: str) -> SLATargetResult:
+def get_sla_target(
+    account_id: str | None = None,
+    plan: str | None = None,
+    severity: str | None = None,
+) -> SLATargetResult:
 
-    account = account_repository.get_by_id(
-        account_id
-    )
+    # --------------------------------------------------
+    # Validate inputs
+    # --------------------------------------------------
 
-    if account is None:
+    if account_id is None and plan is None:
         raise ValueError(
-            f"Account not found: {account_id}"
+            "Either account_id or plan must be provided."
         )
 
-    if severity not in {
+    if account_id is not None and plan is not None:
+        raise ValueError(
+            "Provide either account_id or plan, not both."
+        )
+
+    if severity is not None and severity not in {
         "P1",
         "P2",
         "P3",
@@ -455,48 +464,135 @@ def get_sla_target(account_id: str,severity: str) -> SLATargetResult:
             f"Unsupported severity: {severity}"
         )
 
-    plan = account["plan"]
+    # --------------------------------------------------
+    # Account-specific query
+    # --------------------------------------------------
 
-    agreement = override_store.get_account(
-    account_id
-    )
+    if account_id is not None:
 
-    overrides = agreement.get(
-    "overrides",
-    {}
-    )
+        account = account_repository.get_by_id(
+            account_id
+        )
 
-    agreement_source = get_agreement_source(
-    agreement
-    )
+        if account is None:
+            raise ValueError(
+                f"Account not found: {account_id}"
+            )
 
-    sla_overrides = overrides.get(
-        "sla",
-        {},
-    )
+        plan = account["plan"]
 
-    if severity in sla_overrides:
+        agreement = override_store.get_account(
+            account_id
+        )
+
+        overrides = agreement.get(
+            "overrides",
+            {},
+        )
+
+        sla_overrides = overrides.get(
+            "sla",
+            {},
+        )
+
+        agreement_source = get_agreement_source(
+            agreement
+        )
+
+        # Specific severity requested
+        if severity is not None:
+
+            if severity in sla_overrides:
+                return SLATargetResult(
+                    account_id=account_id,
+                    plan=plan,
+                    severity=severity,
+                    target=sla_overrides[severity],
+                    source=agreement_source,
+                )
+
+            plan_targets = SLA_DEFAULTS.get(plan)
+
+            if plan_targets is None:
+                raise ValueError(
+                    f"Unsupported plan: {plan}"
+                )
+
+            return SLATargetResult(
+                account_id=account_id,
+                plan=plan,
+                severity=severity,
+                target=plan_targets[severity],
+                source="ParcelPilot Support Policy v3",
+            )
+
+        # Full account SLA matrix
+        if sla_overrides:
+            targets = {
+                "P1": sla_overrides.get(
+                    "P1",
+                    SLA_DEFAULTS[plan]["P1"],
+                ),
+                "P2": sla_overrides.get(
+                    "P2",
+                    SLA_DEFAULTS[plan]["P2"],
+                ),
+                "P3": sla_overrides.get(
+                    "P3",
+                    SLA_DEFAULTS[plan]["P3"],
+                ),
+            }
+
+            return SLATargetResult(
+                account_id=account_id,
+                plan=plan,
+                severity=None,
+                target=None,
+                targets=targets,
+                source=agreement_source,
+            )
+
+        plan_targets = SLA_DEFAULTS.get(plan)
+
+        if plan_targets is None:
+            raise ValueError(
+                f"Unsupported plan: {plan}"
+            )
+
         return SLATargetResult(
             account_id=account_id,
             plan=plan,
-            severity=severity,
-            target=sla_overrides[severity],
-            source=agreement_source,
+            severity=None,
+            target=None,
+            targets=plan_targets,
+            source="ParcelPilot Support Policy v3",
         )
 
-    plan_targets = SLA_DEFAULTS.get(
-        plan
-    )
+    # --------------------------------------------------
+    # Plan-level query
+    # --------------------------------------------------
+
+    plan_targets = SLA_DEFAULTS.get(plan)
 
     if plan_targets is None:
         raise ValueError(
             f"Unsupported plan: {plan}"
         )
 
+    if severity is not None:
+        return SLATargetResult(
+            account_id=None,
+            plan=plan,
+            severity=severity,
+            target=plan_targets[severity],
+            source="ParcelPilot Support Policy v3",
+        )
+
     return SLATargetResult(
-        account_id=account_id,
+        account_id=None,
         plan=plan,
-        severity=severity,
-        target=plan_targets[severity],
+        severity=None,
+        target=None,
+        targets=plan_targets,
         source="ParcelPilot Support Policy v3",
     )

@@ -110,40 +110,52 @@ TOOL_DEFINITIONS: list[dict[str, Any]] = [
             },
         },
     },
-    {
+        {
         "type": "function",
         "function": {
             "name": "get_sla_target",
             "description": (
-                "Return the applicable first-response SLA target for "
-                "an account and severity. Customer agreement overrides "
-                "take precedence over current policy defaults."
+                "Return the applicable ParcelPilot support SLA. "
+                "Use account_id for a specific customer account and "
+                "plan for plan-level default SLA questions. "
+                "Use severity for a specific P1/P2/P3 target. "
+                "If severity is omitted, return the complete P1/P2/P3 "
+                "SLA matrix. Customer agreement overrides take "
+                "precedence over current policy defaults."
             ),
             "parameters": {
                 "type": "object",
                 "properties": {
                     "account_id": {
-                        "type": "string",
+                        "type": ["string", "null"],
                         "description": (
-                            "ParcelPilot account ID."
+                            "Customer account ID, for example ACCT-001."
+                        ),
+                    },
+                    "plan": {
+                        "type": ["string", "null"],
+                        "enum": [
+                            "Enterprise",
+                            "Growth",
+                            "Standard",
+                        ],
+                        "description": (
+                            "ParcelPilot plan for a plan-level SLA query."
                         ),
                     },
                     "severity": {
-                        "type": "string",
+                        "type": ["string", "null"],
                         "enum": [
                             "P1",
                             "P2",
                             "P3",
                         ],
                         "description": (
-                            "Support severity."
+                            "Support severity. Omit for all severities."
                         ),
                     },
                 },
-                "required": [
-                    "account_id",
-                    "severity",
-                ],
+                "required": [],
                 "additionalProperties": False,
             },
         },
