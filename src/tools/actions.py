@@ -165,16 +165,23 @@ def execute_action(
     request: ExecuteActionInput,
     acting_role: str,
     acting_user_id: str,
+    acting_account_id: str | None = None,
 ) -> ExecuteActionResult:
     """
     Execute a previously previewed action.
 
     Execution requires:
     1. Existing confirmation ID.
-    2. Explicit confirmation.
-    3. Valid role.
-    4. Manager approval when required.
+    2. Action is still PENDING.
+    3. Explicit confirmation.
+    4. Valid role.
+    5. Correct account scope when applicable.
+    6. Manager approval when required.
     """
+
+    # --------------------------------------------------
+    # Explicit rejection
+    # --------------------------------------------------
 
     if not request.confirmed:
         return _cancel_action(
@@ -182,6 +189,10 @@ def execute_action(
         )
 
     with _connect() as connection:
+
+        # --------------------------------------------------
+        # Find action
+        # --------------------------------------------------
 
         action = connection.execute(
             """
@@ -194,10 +205,18 @@ def execute_action(
             ),
         ).fetchone()
 
+        # --------------------------------------------------
+        # Confirmation must exist
+        # --------------------------------------------------
+
         if action is None:
             raise ValueError(
                 "Confirmation ID not found."
             )
+
+        # --------------------------------------------------
+        # Action must still be pending
+        # --------------------------------------------------
 
         if action["status"] != "PENDING":
             raise ValueError(
@@ -205,23 +224,9 @@ def execute_action(
                 f"{action['status']}."
             )
 
-        amount = action["amount_inr"] or 0
-
-
-        # Manager approval
-
-
-        if amount > MANAGER_APPROVAL_THRESHOLD:
-
-            if acting_role != "manager":
-                raise PermissionError(
-                    "Manager approval is required "
-                    "for actions above ₹1,000."
-                )
-
-
-        # Internal roles only
-
+        # --------------------------------------------------
+        # Role authorization
+        # --------------------------------------------------
 
         if acting_role not in {
             "support_agent",
@@ -232,7 +237,42 @@ def execute_action(
                 "state-changing actions."
             )
 
-        now = datetime.now(timezone.utc).isoformat()
+        # --------------------------------------------------
+        # Account authorization
+        # --------------------------------------------------
+
+        action_account_id = action["account_id"]
+
+        if (
+            acting_account_id is not None
+            and acting_account_id != action_account_id
+        ):
+            raise PermissionError(
+                "You are not authorized to execute "
+                "an action for this account."
+            )
+
+        # --------------------------------------------------
+        # Manager approval
+        # --------------------------------------------------
+
+        amount = action["amount_inr"] or 0
+
+        if amount > MANAGER_APPROVAL_THRESHOLD:
+
+            if acting_role != "manager":
+                raise PermissionError(
+                    "Manager approval is required "
+                    "for actions above ₹1,000."
+                )
+
+        # --------------------------------------------------
+        # Execute
+        # --------------------------------------------------
+
+        now = datetime.now(
+            timezone.utc
+        ).isoformat()
 
         connection.execute(
             """
@@ -254,8 +294,10 @@ def execute_action(
 
     logger.info(
         "Action executed | "
-        "confirmation_id=%s | action_type=%s | "
-        "account_id=%s | acting_role=%s",
+        "confirmation_id=%s | "
+        "action_type=%s | "
+        "account_id=%s | "
+        "acting_role=%s",
         request.confirmation_id,
         action["action_type"],
         action["account_id"],
@@ -267,9 +309,7 @@ def execute_action(
         action_type=action["action_type"],
         account_id=action["account_id"],
         status="EXECUTED",
-        message=(
-            "Action executed successfully."
-        ),
+        message="Action executed successfully.",
     )
 
 

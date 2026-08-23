@@ -8,7 +8,11 @@ from src.schemas.actions_schema import PreviewActionInput
 app = FastAPI()
 app.include_router(router)
 
-client = TestClient(app)
+client = TestClient(
+    app,
+    raise_server_exceptions=False,
+)
+
 
 
 def test_unknown_confirmation_id_is_rejected():
@@ -138,3 +142,69 @@ def test_explicit_rejection_cancels_action():
 
     assert response.status_code == 200
     assert response.json()["status"] == "CANCELLED"
+
+def test_customer_cannot_execute_other_account_action():
+    preview = preview_action(
+        PreviewActionInput(
+            action_type="ticket_update",
+            account_id="ACCT-002",
+            reason="Update LumenWorks ticket.",
+            amount_inr=100,
+        )
+    )
+
+    response = client.post(
+        f"/actions/{preview.confirmation_id}/execute",
+        params={
+            "confirmed": True,
+        },
+        headers={
+            "X-User-ID": "customer-northstar",
+        },
+    )
+
+    assert response.status_code == 403
+def test_customer_cannot_execute_even_own_account_action():
+    preview = preview_action(
+        PreviewActionInput(
+            action_type="ticket_update",
+            account_id="ACCT-001",
+            reason="Update Northstar ticket.",
+            amount_inr=100,
+        )
+    )
+
+    response = client.post(
+        f"/actions/{preview.confirmation_id}/execute",
+        params={
+            "confirmed": True,
+        },
+        headers={
+            "X-User-ID": "customer-northstar",
+        },
+    )
+
+    assert response.status_code == 403
+
+def test_support_agent_can_execute_other_account_action():
+    preview = preview_action(
+        PreviewActionInput(
+            action_type="ticket_update",
+            account_id="ACCT-002",
+            reason="Update LumenWorks ticket.",
+            amount_inr=500,
+        )
+    )
+
+    response = client.post(
+        f"/actions/{preview.confirmation_id}/execute",
+        params={
+            "confirmed": True,
+        },
+        headers={
+            "X-User-ID": "rohit",
+        },
+    )
+
+    assert response.status_code == 200
+    assert response.json()["status"] == "EXECUTED"

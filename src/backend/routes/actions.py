@@ -29,6 +29,15 @@ def execute_pending_action(
     # Resolve identity from the trusted request context.
     try:
         user, _ = build_request_context(request)
+        result = execute_action(
+            request=ExecuteActionInput(
+                confirmation_id=confirmation_id,
+                confirmed=confirmed,
+            ),
+            acting_role=user.role,
+            acting_user_id=user.user_id,
+            acting_account_id=user.account_id,
+        )
 
     except ValueError as exc:
         raise HTTPException(
