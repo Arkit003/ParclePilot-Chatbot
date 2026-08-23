@@ -305,7 +305,6 @@ Frontend:
 VITE_API_BASE_URL=http://localhost:8000
 ```
 
-Do not commit `.env` files containing credentials.
 
 ## Logging
 
@@ -404,25 +403,6 @@ FRONTEND_URL=https://your-vercel-app.vercel.app
 
 The OpenRouter API key stays on the backend and is never exposed to the browser.
 
-### Render
-
-Run the backend with:
-
-```
-uvicorn src.backend.main:app --host 0.0.0.0 --port $PORT
-```
-
-Environment variables need to be configured in the Render service itself.
-
-### Vercel
-
-The frontend is a Vite app in `frontend/`. Set `frontend` as the Vercel project root. It only needs:
-
-```
-VITE_API_BASE_URL=https://your-render-service.onrender.com
-```
-
-Do not add `OPENROUTER_API_KEY` to Vercel — it has no reason to be anywhere near the browser.
 
 ## Persistence considerations
 

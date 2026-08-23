@@ -64,10 +64,20 @@ FRONTEND_URL = os.getenv(
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=[FRONTEND_URL],
+    allow_origins=[
+        FRONTEND_URL,
+    ],
     allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
+    allow_methods=[
+        "GET",
+        "POST",
+        "OPTIONS",
+    ],
+    allow_headers=[
+        "Content-Type",
+        "X-User-ID",
+        "Accept",
+    ],
 )
 app.include_router(
     health_router,
