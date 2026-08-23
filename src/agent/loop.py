@@ -13,6 +13,7 @@ from src.agent.guardrails import (
 )
 from src.agent.tool_defs import TOOL_DEFINITIONS
 from src.agent.tool_registry import TOOL_REGISTRY
+from src.agent.prompt import SYSTEM_PROMPT
 
 
 logger = logging.getLogger(__name__)
@@ -89,7 +90,13 @@ class AgentLoop:
                 "Agent requires at least one message."
             )
 
-        conversation = list(messages)
+        conversation = [
+            {
+                "role": "system",
+                "content": SYSTEM_PROMPT,
+            },
+            *messages,
+        ]
 
         
         # 1. INPUT GUARDRAIL
@@ -428,7 +435,13 @@ class AgentLoop:
 
                     continue
 
-
+                if tool_name in {
+                    "check_cancellation",
+                    "check_service_credit",
+                }:
+                    arguments["request_time"] = (
+                        context.dataset_snapshot
+                    )
                 # 6. EXECUTE TOOL
 
 

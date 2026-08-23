@@ -19,6 +19,7 @@ TEST_CONTEXT = RequestContext(
     role="support_agent",
     account_id=None,
     request_id="test-request",
+    dataset_snapshot="2026-08-16 11:00",
 )
 class BlockingGuardrails(GuardrailEngine):
 

@@ -76,18 +76,9 @@ TOOL_DEFINITIONS: list[dict[str, Any]] = [
                             "ParcelPilot order ID, for example ORD-1001."
                         ),
                     },
-                    "request_time": {
-                        "type": "string",
-                        "description": (
-                            "Time at which the cancellation request "
-                            "is being evaluated, in the dataset's "
-                            "reference time format."
-                        ),
-                    },
                 },
                 "required": [
                     "order_id",
-                    "request_time",
                 ],
                 "additionalProperties": False,
             },
@@ -111,18 +102,9 @@ TOOL_DEFINITIONS: list[dict[str, Any]] = [
                             "ParcelPilot order ID, for example ORD-2002."
                         ),
                     },
-                    "request_time": {
-                        "type": "string",
-                        "description": (
-                            "Time at which the service-credit request "
-                            "is being evaluated, using the dataset's "
-                            "reference time."
-                        ),
-                    },
                 },
                 "required": [
                     "order_id",
-                    "request_time",
                 ],
                 "additionalProperties": False,
             },

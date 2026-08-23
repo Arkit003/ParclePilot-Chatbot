@@ -22,6 +22,7 @@ class RequestContext:
     role: str
     account_id: str | None
     request_id: str
+    dataset_snapshot: str
 
 
 
