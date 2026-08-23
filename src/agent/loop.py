@@ -560,26 +560,21 @@ class AgentLoop:
                 # Convert result to serializable dictionary
 
 
-                if hasattr(
-                    tool_result,
-                    "model_dump",
-                ):
-                    result_data = (
-                        tool_result.model_dump()
-                    )
+                if isinstance(tool_result, list):
+                    result_data = [
+                        item.model_dump()
+                        if hasattr(item, "model_dump")
+                        else item
+                        for item in tool_result
+                    ]
 
-                elif hasattr(
-                    tool_result,
-                    "__dict__",
-                ):
-                    result_data = vars(
-                        tool_result
-                    )
+                elif hasattr(tool_result, "model_dump"):
+                    result_data = tool_result.model_dump()
 
-                elif isinstance(
-                    tool_result,
-                    dict,
-                ):
+                elif hasattr(tool_result, "__dict__"):
+                    result_data = vars(tool_result)
+
+                elif isinstance(tool_result, dict):
                     result_data = tool_result
 
                 else:
@@ -638,15 +633,15 @@ class AgentLoop:
                 # Store successful tool trace
 
 
+                source = post_tool.metadata.get(
+                    "source"
+                )
+
                 tool_results.append(
                     {
                         "tool": tool_name,
                         "arguments": arguments,
-                        "source": (
-                            post_tool.metadata.get(
-                                "source"
-                            )
-                        ),
+                        "source": source,
                         "result": result_data,
                     }
                 )

@@ -1,26 +1,32 @@
-from __future__ import annotations
-
-from typing import Any, Callable
-
-from src.tools.doc_search import doc_search
+from src.tools.actions import preview_action
+from src.tools.doc_search import (
+    DocumentSearch,
+    doc_search,
+)
 from src.tools.structured_data import (
     check_cancellation,
     check_service_credit,
+    get_order_details,
     get_sla_target,
-    get_order_details
-)
-from src.tools.actions import (
-    execute_action,
-    preview_action,
 )
 
 
-TOOL_REGISTRY: dict[str, Callable[..., Any]] = {
-    "doc_search": doc_search,
+TOOL_REGISTRY = {
+    "doc_search": None,
     "check_cancellation": check_cancellation,
     "check_service_credit": check_service_credit,
+    "get_order_details": get_order_details,
     "get_sla_target": get_sla_target,
     "preview_action": preview_action,
-    "get_order_details": get_order_details,
-    
 }
+
+
+def initialize_tools(
+    search_engine: DocumentSearch,
+) -> None:
+    TOOL_REGISTRY["doc_search"] = (
+        lambda **kwargs: doc_search(
+            search_engine=search_engine,
+            **kwargs,
+        )
+    )

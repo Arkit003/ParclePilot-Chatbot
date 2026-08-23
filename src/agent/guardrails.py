@@ -483,6 +483,28 @@ class GuardrailEngine:
         source = result_data.get(
             "source"
         )
+        if tool_name == "doc_search":
+            if isinstance(result, list):
+                document_sources = []
+
+                for item in result:
+                    if hasattr(item, "model_dump"):
+                        item_data = item.model_dump()
+                    elif isinstance(item, dict):
+                        item_data = item
+                    else:
+                        item_data = vars(item)
+
+                    document_name = item_data.get(
+                        "document_name"
+                    )
+
+                    if document_name:
+                        document_sources.append(
+                            document_name
+                        )
+
+                source = document_sources
 
      
 
@@ -498,6 +520,10 @@ class GuardrailEngine:
 
             return GuardrailResult(
                 allowed=False,
+                metadata={
+                "source": source,
+                "result": result_data,
+            },
                 reason=(
                     "Tool produced a deprecated source."
                 ),

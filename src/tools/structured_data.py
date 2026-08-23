@@ -614,18 +614,10 @@ def get_order_details(
         order_id=order["order_id"],
         account_id=order["account_id"],
         status=order["status"],
-        customer_name=order.get("customer_name"),
-        shipment_fee_inr=order.get(
-            "shipment_fee_inr"
-        ),
-        booked_at=order.get("booked_at"),
-        pickup_window_start=order.get(
-            "pickup_window_start"
-        ),
-        pickup_window_end=order.get(
-            "pickup_window_end"
-        ),
-        delivered_at=order.get(
-            "delivered_at"
-        ),
+        customer_name=order["customer_name"],
+        shipment_fee_inr=order["shipment_fee_inr"],
+        booked_at=order["booked_at"],
+        pickup_window_start=order["pickup_window_start"],
+        pickup_window_end=order["pickup_window_end"],
+        delivered_at=order["delivered_at"],
     )

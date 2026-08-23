@@ -216,21 +216,48 @@ class DocumentSearch:
 
         return search_results
 
-_search_engine: DocumentSearch | None = None
 
 
-def get_search_engine() -> DocumentSearch:
-    global _search_engine
+def create_search_engine() -> DocumentSearch:
+    """
+    Create the document search engine.
 
-    if _search_engine is None:
-        _search_engine = DocumentSearch()
-
-    return _search_engine
-
+    This loads the embedding model and initializes
+    the Chroma collection. It should normally be called
+    once during FastAPI application startup.
+    """
+    return DocumentSearch()
 
 def doc_search(
-    request: DocumentSearchInput,
+    query: str | DocumentSearchInput,
+    account_id: str | None = None,
+    top_k: int = 5,
+    include_deprecated: bool = False,
+    search_engine: DocumentSearch | None = None,
 ) -> list[DocumentSearchResult]:
-    """Agent-facing document search tool."""
+    """
+    Agent-facing wrapper.
 
-    return get_search_engine().search(request)
+    The LLM passes primitive arguments.
+    Internal tests may still pass DocumentSearchInput.
+    """
+
+    if isinstance(
+        query,
+        DocumentSearchInput,
+    ):
+        request = query
+    else:
+        request = DocumentSearchInput(
+            query=query,
+            account_id=account_id,
+            top_k=top_k,
+            include_deprecated=include_deprecated,
+        )
+
+    if search_engine is None:
+        raise RuntimeError(
+            "Document search engine is not initialized."
+        )
+
+    return search_engine.search(request)
