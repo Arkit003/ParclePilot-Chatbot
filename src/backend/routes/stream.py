@@ -27,8 +27,8 @@ router = APIRouter(
 
 
 class StreamChatRequest(BaseModel):
-    message: str = Field(
-        min_length=1,
+    messages: list[dict[str, str]] = Field(
+        min_length=1
     )
 
 
@@ -92,12 +92,7 @@ async def chat_stream(
             )
 
             agent.run(
-                messages=[
-                    {
-                        "role": "user",
-                        "content": body.message,
-                    }
-                ],
+                messages=body.messages,
                 context=context,
             )
 

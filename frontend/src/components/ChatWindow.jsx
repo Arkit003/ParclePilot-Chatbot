@@ -1,111 +1,90 @@
 import { useState } from "react";
 
-import { streamChat } from "../api/chat";
+import { useChat } from "../hooks/useChat";
 import ToolCallEvent from "./ToolCallEvent";
 
 
 function ChatWindow({ userId }) {
-  const [input, setInput] = useState("");
-  const [messages, setMessages] =
-    useState([]);
+  const [input, setInput] =
+    useState("");
 
-  const [events, setEvents] = useState(
-    []
-  );
+  const {
+    messages,
+    events,
+    isStreaming,
+    error,
+    sendMessage,
+    stopStreaming,
+  } = useChat(userId);
 
-  const [loading, setLoading] =
-    useState(false);
 
-  const handleSubmit = async (event) => {
+  const handleSubmit = async (
+    event
+  ) => {
     event.preventDefault();
 
-    const message = input.trim();
+    const message =
+      input.trim();
 
-    if (!message || loading) {
+    if (
+      !message ||
+      isStreaming
+    ) {
       return;
     }
 
     setInput("");
-    setLoading(true);
-    setEvents([]);
 
-    setMessages((current) => [
-      ...current,
-      {
-        role: "user",
-        content: message,
-      },
-    ]);
-
-    await streamChat({
-      message,
-      userId,
-
-      onEvent: (agentEvent) => {
-        setEvents((current) => [
-          ...current,
-          agentEvent,
-        ]);
-
-        if (
-          agentEvent.type ===
-          "final_answer"
-        ) {
-          setMessages((current) => [
-            ...current,
-            {
-              role: "assistant",
-              content:
-                agentEvent.data
-                  .answer ?? "",
-            },
-          ]);
-        }
-      },
-
-      onError: (error) => {
-        setMessages((current) => [
-          ...current,
-          {
-            role: "system",
-            content:
-              error.message ??
-              "Something went wrong.",
-          },
-        ]);
-      },
-
-      onDone: () => {
-        setLoading(false);
-      },
-    });
+    await sendMessage(
+      message
+    );
   };
+
 
   return (
     <div className="chat-window">
+
       <div className="messages">
         {messages.map(
-          (message, index) => (
+          (message) => (
             <div
-              key={index}
+              key={message.id}
               className={`message ${message.role}`}
             >
               {message.content}
             </div>
           )
         )}
-      </div>
 
-      <div className="tool-events">
-        {events.map(
-          (event, index) => (
-            <ToolCallEvent
-              key={`${event.type}-${index}`}
-              event={event}
-            />
-          )
+        {error && (
+          <div className="message system">
+            {error}
+          </div>
         )}
       </div>
+
+
+      {events.length > 0 && (
+        <div className="tool-events">
+          {events.map(
+            (event, index) => (
+              <ToolCallEvent
+                key={`${event.type}-${index}`}
+                event={event}
+              />
+            )
+          )}
+
+          {isStreaming && (
+            <div className="tool-event">
+              <span>
+                Working...
+              </span>
+            </div>
+          )}
+        </div>
+      )}
+
 
       <form
         className="chat-input"
@@ -114,26 +93,40 @@ function ChatWindow({ userId }) {
         <input
           value={input}
           onChange={(event) =>
-            setInput(event.target.value)
+            setInput(
+              event.target.value
+            )
           }
-          placeholder="Ask ParcelPilot..."
-          disabled={loading}
+          placeholder={
+            "Ask about shipments, SLAs, cancellations..."
+          }
+          disabled={isStreaming}
         />
 
-        <button
-          type="submit"
-          disabled={
-            loading ||
-            !input.trim()
-          }
-        >
-          {loading
-            ? "Thinking..."
-            : "Send"}
-        </button>
+        {isStreaming ? (
+          <button
+            type="button"
+            onClick={
+              stopStreaming
+            }
+          >
+            Stop
+          </button>
+        ) : (
+          <button
+            type="submit"
+            disabled={
+              !input.trim()
+            }
+          >
+            Send
+          </button>
+        )}
       </form>
+
     </div>
   );
 }
+
 
 export default ChatWindow;

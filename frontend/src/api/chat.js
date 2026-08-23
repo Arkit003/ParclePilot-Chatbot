@@ -1,89 +1,7 @@
-const API_BASE_URL = "http://localhost:8000";
+const API_BASE_URL =
+  import.meta.env.VITE_API_BASE_URL ||
+  "http://localhost:8000";
 
-export async function streamChat({
-  message,
-  userId,
-  onEvent,
-  onError,
-  onDone,
-}) {
-  try {
-    const response = await fetch(
-      `${API_BASE_URL}/chat/stream`,
-      {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          "X-User-ID": userId,
-        },
-        body: JSON.stringify({
-          message,
-        }),
-      }
-    );
-
-    if (!response.ok) {
-      const text = await response.text();
-
-      throw new Error(
-        `Chat request failed: ${response.status} ${text}`
-      );
-    }
-
-    if (!response.body) {
-      throw new Error(
-        "Streaming response body is unavailable."
-      );
-    }
-
-    const reader = response.body.getReader();
-    const decoder = new TextDecoder();
-
-    let buffer = "";
-
-    while (true) {
-      const { value, done } =
-        await reader.read();
-
-      if (done) {
-        break;
-      }
-
-      buffer += decoder.decode(value, {
-        stream: true,
-      });
-
-      const events = buffer.split(
-        "\n\n"
-      );
-
-      buffer = events.pop() ?? "";
-
-      for (const rawEvent of events) {
-        const parsed = parseSSEEvent(
-          rawEvent
-        );
-
-        if (parsed) {
-          onEvent?.(parsed);
-        }
-      }
-    }
-
-    // Process any remaining buffered event.
-    if (buffer.trim()) {
-      const parsed = parseSSEEvent(buffer);
-
-      if (parsed) {
-        onEvent?.(parsed);
-      }
-    }
-
-    onDone?.();
-  } catch (error) {
-    onError?.(error);
-  }
-}
 
 function parseSSEEvent(rawEvent) {
   const lines = rawEvent.split("\n");
@@ -123,4 +41,110 @@ function parseSSEEvent(rawEvent) {
     type: eventType,
     data: parsedData,
   };
+}
+
+
+export async function streamChat({
+  messages,
+  userId,
+  signal,
+  onEvent,
+})  {
+  const response = await fetch(
+  `${API_BASE_URL}/chat/stream`,
+  {
+    method: "POST",
+
+    headers: {
+      "Content-Type": "application/json",
+      "X-User-ID": userId,
+    },
+
+    body: JSON.stringify({
+      messages,
+    }),
+
+    signal,
+  }
+);
+
+  if (!response.ok) {
+    let detail = "Chat request failed.";
+
+    try {
+      const body = await response.json();
+
+      if (body?.detail) {
+        detail = body.detail;
+      }
+    } catch {
+      // Keep default error message.
+    }
+
+    throw new Error(
+      `${response.status}: ${detail}`
+    );
+  }
+
+  if (!response.body) {
+    throw new Error(
+      "Streaming response body is unavailable."
+    );
+  }
+
+  const reader =
+    response.body.getReader();
+
+  const decoder = new TextDecoder();
+
+  let buffer = "";
+
+  while (true) {
+    const {
+      value,
+      done,
+    } = await reader.read();
+
+    if (done) {
+      break;
+    }
+
+    buffer += decoder.decode(
+      value,
+      {
+        stream: true,
+      }
+    );
+
+    const chunks =
+      buffer.split("\n\n");
+
+    buffer =
+      chunks.pop() ?? "";
+
+    for (const chunk of chunks) {
+      if (!chunk.trim()) {
+        continue;
+      }
+
+      const event =
+        parseSSEEvent(chunk);
+
+      if (event) {
+        onEvent?.(event);
+      }
+    }
+  }
+
+  // Flush decoder and remaining buffer.
+  buffer += decoder.decode();
+
+  if (buffer.trim()) {
+    const event =
+      parseSSEEvent(buffer);
+
+    if (event) {
+      onEvent?.(event);
+    }
+  }
 }

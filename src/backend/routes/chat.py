@@ -21,9 +21,8 @@ router = APIRouter(
 
 
 class ChatRequest(BaseModel):
-    message: str = Field(
-        min_length=1,
-        description="User's support question.",
+    messages: list[dict[str, str]] = Field(
+        min_length=1
     )
 
 
@@ -78,12 +77,7 @@ def chat(
     )
 
     answer = agent.run(
-        messages=[
-            {
-                "role": "user",
-                "content": body.message,
-            }
-        ],
+        messages=request.messages,
         context=context,
     )
 
