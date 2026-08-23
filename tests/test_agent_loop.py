@@ -477,3 +477,63 @@ def test_agent_stops_when_input_guardrail_blocks():
     assert len(
         client.chat.completions.calls
     ) == 0
+
+def test_agent_passes_authenticated_context_to_llm(
+    monkeypatch,
+):
+    from src.agent import tool_registry
+
+    monkeypatch.setitem(
+        tool_registry.TOOL_REGISTRY,
+        "check_cancellation",
+        fake_check_cancellation,
+    )
+
+    responses = [
+        MockResponse(
+            choices=[
+                MockChoice(
+                    message=MockMessage(
+                        content="I can help with your order."
+                    )
+                )
+            ]
+        )
+    ]
+
+    client = MockLLMClient(responses)
+
+    agent = AgentLoop(
+        llm_client=client,
+        model="mock-model",
+    )
+
+    context = RequestContext(
+        user_id="customer-northstar",
+        role="customer",
+        account_id="ACCT-001",
+        request_id="test-context",
+        dataset_snapshot="2026-08-16 11:00",
+    )
+
+    agent.run(
+        messages=[
+            {
+                "role": "user",
+                "content": "Show me my orders.",
+            }
+        ],
+        context=context,
+    )
+
+    messages_sent = (
+        client.chat.completions.calls[0]["messages"]
+    )
+
+    assert messages_sent[0]["role"] == "system"
+    assert "ParcelPilot" in messages_sent[0]["content"]
+
+    assert messages_sent[1]["role"] == "system"
+    assert "customer" in messages_sent[1]["content"]
+    assert "ACCT-001" in messages_sent[1]["content"]
+    assert "2026-08-16 11:00" in messages_sent[1]["content"]

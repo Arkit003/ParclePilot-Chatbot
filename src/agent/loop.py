@@ -116,11 +116,23 @@ class AgentLoop:
                 "Agent requires at least one message."
             )
 
+        context_message = {
+            "role": "system",
+            "content": (
+                "Authenticated request context:\n"
+                f"- Role: {context.role}\n"
+                f"- Account scope: "
+                f"{context.account_id or 'MULTI_ACCOUNT_INTERNAL'}\n"
+                f"- Dataset snapshot: {context.dataset_snapshot}\n"
+            ),
+        }
+
         conversation = [
             {
                 "role": "system",
                 "content": SYSTEM_PROMPT,
             },
+            context_message,
             *messages,
         ]
 

@@ -9,7 +9,7 @@ from typing import Optional,Any
 from src.database.database import Database
 from src.database.repositories.accounts import AccountRepository
 from src.database.repositories.orders import OrderRepository
-from src.schemas.structured_data_schema import CancellationResult,ServiceCreditResult,SLATargetResult
+from src.schemas.structured_data_schema import CancellationResult,ServiceCreditResult,SLATargetResult,OrderDetailsResult
 from src.tools import (SLA_DEFAULTS,
                        DEFAULT_CANCELLATION_FEE,
                        DEFAULT_CANCELLATION_WINDOW_MINUTES,
@@ -595,4 +595,37 @@ def get_sla_target(
         target=None,
         targets=plan_targets,
         source="ParcelPilot Support Policy v3",
+    )
+
+def get_order_details(
+    order_id: str,
+) -> OrderDetailsResult:
+
+    order = order_repository.get_by_id(
+        order_id
+    )
+
+    if order is None:
+        raise ValueError(
+            f"Order not found: {order_id}"
+        )
+
+    return OrderDetailsResult(
+        order_id=order["order_id"],
+        account_id=order["account_id"],
+        status=order["status"],
+        customer_name=order.get("customer_name"),
+        shipment_fee_inr=order.get(
+            "shipment_fee_inr"
+        ),
+        booked_at=order.get("booked_at"),
+        pickup_window_start=order.get(
+            "pickup_window_start"
+        ),
+        pickup_window_end=order.get(
+            "pickup_window_end"
+        ),
+        delivered_at=order.get(
+            "delivered_at"
+        ),
     )

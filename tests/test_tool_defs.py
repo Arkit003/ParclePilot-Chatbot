@@ -6,8 +6,8 @@ EXPECTED_TOOLS = {
     "check_cancellation",
     "check_service_credit",
     "get_sla_target",
+    "get_order_details",
     "preview_action",
-    
 }
 
 def test_required_tools_exist():

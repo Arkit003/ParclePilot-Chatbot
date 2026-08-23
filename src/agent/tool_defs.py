@@ -208,5 +208,29 @@ TOOL_DEFINITIONS: list[dict[str, Any]] = [
             },
         },
     },
+    {
+        "type": "function",
+        "function": {
+            "name": "get_order_details",
+            "description": (
+                "Retrieve details for a specific ParcelPilot order. "
+                "Use the order ID supplied by the user."
+            ),
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "order_id": {
+                        "type": "string",
+                        "description": (
+                            "ParcelPilot order ID, "
+                            "for example ORD-1002."
+                        ),
+                    },
+                },
+                "required": ["order_id"],
+                "additionalProperties": False,
+            },
+        },
+    },
     
 ]

@@ -7,6 +7,7 @@ from src.tools.structured_data import (
     check_cancellation,
     check_service_credit,
     get_sla_target,
+    get_order_details
 )
 from src.tools.actions import (
     execute_action,
@@ -20,5 +21,6 @@ TOOL_REGISTRY: dict[str, Callable[..., Any]] = {
     "check_service_credit": check_service_credit,
     "get_sla_target": get_sla_target,
     "preview_action": preview_action,
+    "get_order_details": get_order_details,
     
 }

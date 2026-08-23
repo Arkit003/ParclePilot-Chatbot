@@ -68,6 +68,7 @@ class GuardrailEngine:
         "check_cancellation",
         "check_service_credit",
         "get_sla_target",
+        "get_order_details",
     }
 
     # Only preview is available to the normal agent loop.
@@ -412,10 +413,9 @@ class GuardrailEngine:
         if tool_name in {
             "check_cancellation",
             "check_service_credit",
+            "get_order_details",
         }:
-            order_id = arguments.get(
-                "order_id"
-            )
+            order_id = arguments.get("order_id")
 
             if not order_id:
                 return None

@@ -71,3 +71,14 @@ class SLATargetResult(BaseModel):
     target: str | None = None
     targets: dict[str, str] | None = None
     source: str
+
+class OrderDetailsResult(BaseModel):
+    order_id: str
+    account_id: str
+    status: str
+    customer_name: str | None = None
+    shipment_fee_inr: float | None = None
+    booked_at: str | None = None
+    pickup_window_start: str | None = None
+    pickup_window_end: str | None = None
+    delivered_at: str | None = None

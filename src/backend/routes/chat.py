@@ -4,6 +4,7 @@ import logging
 
 from fastapi import APIRouter, HTTPException, Request
 from pydantic import BaseModel, Field
+from typing import Literal
 
 from src.agent.guardrails import RequestContext
 from src.agent.loop import AgentLoop
@@ -20,9 +21,15 @@ router = APIRouter(
 )
 
 
+
+class ChatMessage(BaseModel):
+    role: Literal["user", "assistant"]
+    content: str = Field(min_length=1)
+
+
 class ChatRequest(BaseModel):
-    messages: list[dict[str, str]] = Field(
-        min_length=1
+    messages: list[ChatMessage] = Field(
+        min_length=1,
     )
 
 

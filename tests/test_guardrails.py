@@ -421,3 +421,67 @@ def test_output_guardrail_accepts_traceable_tool_answer(
     )
 
     assert result.allowed is True
+
+def test_customer_can_access_own_order(
+    guardrails,
+):
+    context = RequestContext(
+        user_id="customer-northstar",
+        role="customer",
+        account_id="ACCT-001",
+        request_id="req-own-order",
+        dataset_snapshot="2026-08-16 11:00",
+    )
+
+    result = guardrails.check_pre_tool(
+        tool_name="get_order_details",
+        arguments={
+            "order_id": "ORD-1002",
+        },
+        context=context,
+    )
+
+    assert result.allowed is True
+
+def test_customer_cannot_access_other_account_order(
+    guardrails,
+):
+    context = RequestContext(
+        user_id="customer-northstar",
+        role="customer",
+        account_id="ACCT-001",
+        request_id="req-other-order",
+        dataset_snapshot="2026-08-16 11:00",
+    )
+
+    result = guardrails.check_pre_tool(
+        tool_name="get_order_details",
+        arguments={
+            "order_id": "ORD-2001",
+        },
+        context=context,
+    )
+
+    assert result.allowed is False
+    assert "another account" in result.reason.lower()
+
+def test_support_agent_can_access_other_account_order(
+    guardrails,
+):
+    context = RequestContext(
+        user_id="rohit",
+        role="support_agent",
+        account_id=None,
+        request_id="req-support-order",
+        dataset_snapshot="2026-08-16 11:00",
+    )
+
+    result = guardrails.check_pre_tool(
+        tool_name="get_order_details",
+        arguments={
+            "order_id": "ORD-2001",
+        },
+        context=context,
+    )
+
+    assert result.allowed is True
