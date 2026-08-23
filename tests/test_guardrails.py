@@ -21,6 +21,7 @@ def customer_context():
         role="customer",
         account_id="ACCT-001",
         request_id="req-001",
+        dataset_snapshot="2026-08-16 11:00",
     )
 
 
@@ -31,6 +32,7 @@ def support_context():
         role="support_agent",
         account_id=None,
         request_id="req-002",
+        dataset_snapshot="2026-08-16 11:00",
     )
 
 
@@ -41,6 +43,7 @@ def manager_context():
         role="manager",
         account_id=None,
         request_id="req-003",
+        dataset_snapshot="2026-08-16 11:00",
     )
 
 
@@ -82,6 +85,7 @@ def test_input_guardrail_rejects_unknown_role(
         role="admin",
         account_id=None,
         request_id="req-001",
+        dataset_snapshot="2026-08-16 11:00",
     )
 
     result = guardrails.check_input(
@@ -101,6 +105,7 @@ def test_customer_requires_account(
         role="customer",
         account_id=None,
         request_id="req-001",
+        dataset_snapshot="2026-08-16 11:00",
     )
 
     result = guardrails.check_input(

@@ -37,6 +37,7 @@ def execute_pending_action(
         role="support_agent",
         account_id=None,
         request_id="mock-request",
+        dataset_snapshot="2026-08-16 11:00",
     )
 
     try:

@@ -14,9 +14,14 @@ from src.agent.guardrails import (
 from src.agent.tool_defs import TOOL_DEFINITIONS
 from src.agent.tool_registry import TOOL_REGISTRY
 from src.agent.prompt import SYSTEM_PROMPT
+from collections.abc import Callable
+
+from src.agent.events import AgentEvent
 
 
 logger = logging.getLogger(__name__)
+
+AgentEventCallback = Callable[[AgentEvent], None]
 
 MAX_ITERATIONS = 5
 
@@ -57,10 +62,27 @@ class AgentLoop:
         llm_client: Any,
         model: str,
         guardrails: GuardrailEngine | None = None,
+        event_callback: AgentEventCallback | None = None,
     ) -> None:
         self.llm_client = llm_client
         self.model = model
         self.guardrails = guardrails or GuardrailEngine()
+        self.event_callback = event_callback
+
+    def _emit(
+        self,
+        event_type: str,
+        **data: Any,
+    ) -> None:
+        if self.event_callback is None:
+            return
+
+        self.event_callback(
+            AgentEvent(
+                type=event_type,
+                data=data,
+            )
+        )
 
     def run(
         self,
@@ -84,6 +106,10 @@ class AgentLoop:
         str
             Final validated assistant response.
         """
+        self._emit(
+            "agent_started",
+            request_id=context.request_id,
+        )
 
         if not messages:
             raise ValueError(
@@ -137,6 +163,11 @@ class AgentLoop:
             1,
             MAX_ITERATIONS + 1,
         ):
+            self._emit(
+                "iteration_started",
+                request_id=context.request_id,
+                iteration=iteration,
+            )
             logger.info(
                 "Agent iteration started | "
                 "request_id=%s | iteration=%d",
@@ -166,6 +197,12 @@ class AgentLoop:
                     context.request_id,
                     iteration,
                 )
+                self._emit(
+                    "agent_error",
+                    request_id=context.request_id,
+                    error=str(exc),
+                )
+
 
                 return (
                     "I couldn't process the request right now. "
@@ -228,6 +265,7 @@ class AgentLoop:
 
             if not assistant_message.tool_calls:
 
+                
                 answer = (
                     assistant_message.content
                     or ""
@@ -263,6 +301,16 @@ class AgentLoop:
                         "I couldn't safely verify the answer. "
                         "Please contact support for assistance."
                     )
+                self._emit(
+                    "final_answer",
+                    request_id=context.request_id,
+                    answer=answer,
+                )
+
+                self._emit(
+                    "agent_finished",
+                    request_id=context.request_id,
+                )
 
                 return answer
 
@@ -398,7 +446,7 @@ class AgentLoop:
 
                 # 5. PRE-TOOL GUARDRAIL
 
-
+                
                 pre_tool = (
                     self.guardrails.check_pre_tool(
                         tool_name=tool_name,
@@ -415,6 +463,13 @@ class AgentLoop:
                         context.request_id,
                         tool_name,
                         pre_tool.reason,
+                    )
+                    self._emit(
+                        "guardrail_blocked",
+                        request_id=context.request_id,
+                        stage="pre_tool",
+                        tool=tool_name,
+                        reason=pre_tool.reason,
                     )
 
                     conversation.append(
@@ -456,6 +511,12 @@ class AgentLoop:
                         "request_id=%s | tool=%s",
                         context.request_id,
                         tool_name,
+                    )
+                    self._emit(
+                        "tool_completed",
+                        request_id=context.request_id,
+                        iteration=iteration,
+                        tool=tool_name,
                     )
 
                 except Exception as exc:
@@ -534,6 +595,13 @@ class AgentLoop:
                         context.request_id,
                         tool_name,
                         post_tool.reason,
+                    )
+                    self._emit(
+                        "guardrail_blocked",
+                        request_id=context.request_id,
+                        stage="post_tool",
+                        tool=tool_name,
+                        reason=post_tool.reason,
                     )
 
                     conversation.append(

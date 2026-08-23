@@ -457,6 +457,7 @@ def test_agent_stops_when_input_guardrail_blocks():
         role="customer",
         account_id="ACCT-001",
         request_id="req-blocked",
+        dataset_snapshot="2026-08-16 11:00",
     )
 
     with pytest.raises(
