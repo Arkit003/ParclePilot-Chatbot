@@ -4,29 +4,23 @@ export function getEventLabel(event) {
       return "Starting support review...";
 
     case "iteration_started":
-      return `Reviewing request...`;
+      return null;
 
     case "tool_requested":
-      return getToolRequestedLabel(
+      return toolRequestedLabel(
         event.data?.tool
       );
 
     case "tool_completed":
-      return getToolCompletedLabel(
+      return toolCompletedLabel(
         event.data?.tool
       );
 
     case "guardrail_blocked":
-      return "Request blocked by access policy.";
-
-    case "final_answer":
-      return null;
-
-    case "agent_finished":
-      return null;
+      return "Access policy check blocked this request.";
 
     case "agent_error":
-      return "Something went wrong while processing the request.";
+      return "A support operation encountered an error.";
 
     default:
       return null;
@@ -34,7 +28,7 @@ export function getEventLabel(event) {
 }
 
 
-function getToolRequestedLabel(tool) {
+function toolRequestedLabel(tool) {
   switch (tool) {
     case "check_cancellation":
       return "Checking cancellation eligibility...";
@@ -44,6 +38,9 @@ function getToolRequestedLabel(tool) {
 
     case "get_sla_target":
       return "Checking SLA policy...";
+
+    case "get_order_details":
+      return "Checking order details...";
 
     case "doc_search":
       return "Checking ParcelPilot documentation...";
@@ -57,7 +54,7 @@ function getToolRequestedLabel(tool) {
 }
 
 
-function getToolCompletedLabel(tool) {
+function toolCompletedLabel(tool) {
   switch (tool) {
     case "check_cancellation":
       return "Cancellation eligibility checked.";
@@ -67,6 +64,9 @@ function getToolCompletedLabel(tool) {
 
     case "get_sla_target":
       return "SLA policy checked.";
+
+    case "get_order_details":
+      return "Order details checked.";
 
     case "doc_search":
       return "Relevant documentation checked.";

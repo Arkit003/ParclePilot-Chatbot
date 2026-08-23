@@ -1,20 +1,27 @@
 import { useState } from "react";
 
 import { useChat } from "../hooks/useChat";
-import ToolCallEvent from "./ToolCallEvent";
+
+import ActionConfirmation from "./ActionConfirmation";
+import ActivityTimeline from "./ActivityTimeline";
+import EmptyState from "./EmptyState";
+import MessageBubble from "./MessageBubble";
 
 
 function ChatWindow({ userId }) {
   const [input, setInput] =
     useState("");
 
+
   const {
     messages,
     events,
     isStreaming,
     error,
+    pendingAction,
     sendMessage,
     stopStreaming,
+    clearPendingAction,
   } = useChat(userId);
 
 
@@ -41,90 +48,131 @@ function ChatWindow({ userId }) {
   };
 
 
+  const handleActionComplete =
+    (result) => {
+      clearPendingAction();
+
+      /*
+       * We will add the execution result
+       * to the conversation in the next
+       * refinement.
+       */
+      console.log(
+        "Action completed:",
+        result
+      );
+    };
+
+
+  const hasMessages =
+    messages.length > 0;
+
+
   return (
-    <div className="chat-window">
+    <section className="chat-layout">
 
-      <div className="messages">
-        {messages.map(
-          (message) => (
-            <div
-              key={message.id}
-              className={`message ${message.role}`}
-            >
-              {message.content}
-            </div>
-          )
-        )}
+      <div className="chat-content">
 
-        {error && (
-          <div className="message system">
-            {error}
+        {!hasMessages ? (
+          <EmptyState />
+        ) : (
+          <div className="conversation">
+
+            {messages.map(
+              (message) => (
+                <MessageBubble
+                  key={message.id}
+                  message={message}
+                />
+              )
+            )}
+
+
+            {error && (
+              <div className="error-message">
+                {error}
+              </div>
+            )}
+
+
+            <ActivityTimeline
+              events={events}
+              isStreaming={
+                isStreaming
+              }
+            />
+
+
+            {pendingAction && (
+              <ActionConfirmation
+                action={pendingAction}
+                userId={userId}
+                onComplete={
+                  handleActionComplete
+                }
+              />
+            )}
+
           </div>
         )}
+
       </div>
 
 
-      {events.length > 0 && (
-        <div className="tool-events">
-          {events.map(
-            (event, index) => (
-              <ToolCallEvent
-                key={`${event.type}-${index}`}
-                event={event}
-              />
-            )
+      <div className="composer-container">
+
+        <form
+          className="composer"
+          onSubmit={handleSubmit}
+        >
+
+          <textarea
+            value={input}
+            onChange={(event) =>
+              setInput(
+                event.target.value
+              )
+            }
+            placeholder={
+              "Ask about an order, SLA, cancellation..."
+            }
+            rows={1}
+            disabled={isStreaming}
+          />
+
+
+          {isStreaming ? (
+            <button
+              type="button"
+              className="composer-button stop"
+              onClick={
+                stopStreaming
+              }
+            >
+              Stop
+            </button>
+          ) : (
+            <button
+              type="submit"
+              className="composer-button"
+              disabled={
+                !input.trim()
+              }
+            >
+              Send
+            </button>
           )}
 
-          {isStreaming && (
-            <div className="tool-event">
-              <span>
-                Working...
-              </span>
-            </div>
-          )}
+        </form>
+
+
+        <div className="composer-hint">
+          ParcelPilot Support Assistant
         </div>
-      )}
 
+      </div>
 
-      <form
-        className="chat-input"
-        onSubmit={handleSubmit}
-      >
-        <input
-          value={input}
-          onChange={(event) =>
-            setInput(
-              event.target.value
-            )
-          }
-          placeholder={
-            "Ask about shipments, SLAs, cancellations..."
-          }
-          disabled={isStreaming}
-        />
-
-        {isStreaming ? (
-          <button
-            type="button"
-            onClick={
-              stopStreaming
-            }
-          >
-            Stop
-          </button>
-        ) : (
-          <button
-            type="submit"
-            disabled={
-              !input.trim()
-            }
-          >
-            Send
-          </button>
-        )}
-      </form>
-
-    </div>
+    </section>
   );
 }
 

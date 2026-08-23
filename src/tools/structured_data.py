@@ -610,14 +610,28 @@ def get_order_details(
             f"Order not found: {order_id}"
         )
 
+    order_data = dict(order)
+
     return OrderDetailsResult(
-        order_id=order["order_id"],
-        account_id=order["account_id"],
-        status=order["status"],
-        customer_name=order["customer_name"],
-        shipment_fee_inr=order["shipment_fee_inr"],
-        booked_at=order["booked_at"],
-        pickup_window_start=order["pickup_window_start"],
-        pickup_window_end=order["pickup_window_end"],
-        delivered_at=order["delivered_at"],
+        order_id=order_data["order_id"],
+        account_id=order_data["account_id"],
+        status=order_data["status"],
+        customer_name=order_data.get(
+            "customer_name"
+        ),
+        shipment_fee_inr=order_data.get(
+            "shipment_fee_inr"
+        ),
+        booked_at=order_data.get(
+            "booked_at"
+        ),
+        pickup_window_start=order_data.get(
+            "pickup_window_start"
+        ),
+        pickup_window_end=order_data.get(
+            "pickup_window_end"
+        ),
+        delivered_at=order_data.get(
+            "delivered_at"
+        ),
     )

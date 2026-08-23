@@ -645,6 +645,30 @@ class AgentLoop:
                         "result": result_data,
                     }
                 )
+                # Emit action preview for frontend
+                if tool_name == "preview_action":
+                    self._emit(
+                        "action_preview",
+                        request_id=context.request_id,
+                        confirmation_id=result_data.get(
+                            "confirmation_id"
+                        ),
+                        action_type=result_data.get(
+                            "action_type"
+                        ),
+                        account_id=result_data.get(
+                            "account_id"
+                        ),
+                        amount_inr=result_data.get(
+                            "amount_inr"
+                        ),
+                        reason=result_data.get(
+                            "reason"
+                        ),
+                        status=result_data.get(
+                            "status"
+                        ),
+                    )
 
 
                 # Send result back to LLM

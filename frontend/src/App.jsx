@@ -1,8 +1,11 @@
 import { useState } from "react";
 
+import AppShell from "./components/AppShell";
 import ChatWindow from "./components/ChatWindow";
-import RoleSwitcher from "./components/RoleSwitcher";
-import "./styles/app.css";
+
+import "./styles/globals.css";
+import "./styles/shell.css";
+import "./styles/chat.css";
 
 
 function App() {
@@ -10,26 +13,12 @@ function App() {
     useState("customer-northstar");
 
   return (
-    <div className="app">
-      <header className="header">
-        <div>
-          <h1>ParcelPilot</h1>
-          <p>AI Support Agent</p>
-        </div>
-
-        <RoleSwitcher
-          userId={userId}
-          onChange={setUserId}
-        />
-      </header>
-
-      <main>
-        <ChatWindow
-          key={userId}
-          userId={userId}
-        />
-      </main>
-    </div>
+    <AppShell
+      userId={userId}
+      onUserChange={setUserId}
+    >
+      <ChatWindow userId={userId} />
+    </AppShell>
   );
 }
 

@@ -17,11 +17,11 @@ const USERS = [
   },
   {
     id: "rohit",
-    label: "Rohit — Support",
+    label: "Rohit · Support",
   },
   {
     id: "maya",
-    label: "Maya — Support",
+    label: "Maya · Support",
   },
   {
     id: "manager",
@@ -36,6 +36,7 @@ function RoleSwitcher({
 }) {
   return (
     <select
+      className="role-switcher"
       value={userId}
       onChange={(event) =>
         onChange(event.target.value)

@@ -1,0 +1,69 @@
+.app-header {
+  height: 72px;
+
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+
+  padding: 0 32px;
+
+  background: var(--pp-white);
+
+  border-bottom: 1px solid var(--pp-border);
+}
+
+.brand {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.brand-mark {
+  width: 38px;
+  height: 38px;
+
+  display: grid;
+  place-items: center;
+
+  border-radius: 11px;
+
+  background: var(--pp-navy);
+  color: var(--pp-yellow);
+
+  font-weight: 900;
+}
+
+.brand-name {
+  font-weight: 800;
+  font-size: 17px;
+
+  color: var(--pp-navy);
+}
+
+.brand-subtitle {
+  margin-top: 2px;
+
+  color: var(--pp-teal);
+
+  font-size: 11px;
+  font-weight: 600;
+
+  letter-spacing: 0.02em;
+}
+
+.role-switcher {
+  padding: 9px 13px;
+
+  border: 1px solid var(--pp-border);
+  border-radius: 9px;
+
+  background: var(--pp-white);
+  color: var(--pp-navy);
+
+  cursor: pointer;
+}
+
+.role-switcher:focus {
+  outline: 2px solid var(--pp-soft-cyan);
+  border-color: var(--pp-teal);
+}

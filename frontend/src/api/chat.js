@@ -49,24 +49,24 @@ export async function streamChat({
   userId,
   signal,
   onEvent,
-})  {
+}) {
   const response = await fetch(
-  `${API_BASE_URL}/chat/stream`,
-  {
-    method: "POST",
+    `${API_BASE_URL}/chat/stream`,
+    {
+      method: "POST",
 
-    headers: {
-      "Content-Type": "application/json",
-      "X-User-ID": userId,
-    },
+      headers: {
+        "Content-Type": "application/json",
+        "X-User-ID": userId,
+      },
 
-    body: JSON.stringify({
-      messages,
-    }),
+      body: JSON.stringify({
+        messages,
+      }),
 
-    signal,
-  }
-);
+      signal,
+    }
+  );
 
   if (!response.ok) {
     let detail = "Chat request failed.";
@@ -78,7 +78,7 @@ export async function streamChat({
         detail = body.detail;
       }
     } catch {
-      // Keep default error message.
+      // Keep default error.
     }
 
     throw new Error(
@@ -111,9 +111,7 @@ export async function streamChat({
 
     buffer += decoder.decode(
       value,
-      {
-        stream: true,
-      }
+      { stream: true }
     );
 
     const chunks =
@@ -136,7 +134,6 @@ export async function streamChat({
     }
   }
 
-  // Flush decoder and remaining buffer.
   buffer += decoder.decode();
 
   if (buffer.trim()) {
