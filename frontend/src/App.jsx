@@ -17,6 +17,16 @@ function App() {
       userId={userId}
       onUserChange={setUserId}
     >
+      <div className="service-notice">
+        <strong>Service notice:</strong>{" "}
+        The backend is hosted on Render's free tier
+        and may sleep after periods of inactivity.
+        The first request after inactivity can take a
+        few minutes while the service wakes up and
+        initializes the embedding model. Subsequent
+        requests should normally complete much faster.
+      </div>
+
       <ChatWindow userId={userId} />
     </AppShell>
   );
