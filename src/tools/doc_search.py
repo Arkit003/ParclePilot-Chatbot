@@ -228,6 +228,23 @@ def create_search_engine() -> DocumentSearch:
     """
     return DocumentSearch()
 
+_search_engine: DocumentSearch | None = None
+
+
+def get_search_engine() -> DocumentSearch:
+    global _search_engine
+
+    if _search_engine is None:
+        logger.info(
+            "Initializing document search engine."
+        )
+        _search_engine = create_search_engine()
+        logger.info(
+            "Document search engine initialized."
+        )
+
+    return _search_engine
+
 def doc_search(
     query: str | DocumentSearchInput,
     account_id: str | None = None,
@@ -235,12 +252,6 @@ def doc_search(
     include_deprecated: bool = False,
     search_engine: DocumentSearch | None = None,
 ) -> list[DocumentSearchResult]:
-    """
-    Agent-facing wrapper.
-
-    The LLM passes primitive arguments.
-    Internal tests may still pass DocumentSearchInput.
-    """
 
     if isinstance(
         query,
@@ -256,8 +267,6 @@ def doc_search(
         )
 
     if search_engine is None:
-        raise RuntimeError(
-            "Document search engine is not initialized."
-        )
+        search_engine = get_search_engine()
 
     return search_engine.search(request)

@@ -12,7 +12,7 @@ from src.tools.structured_data import (
 
 
 TOOL_REGISTRY = {
-    "doc_search": None,
+    "doc_search": doc_search,
     "check_cancellation": check_cancellation,
     "check_service_credit": check_service_credit,
     "get_order_details": get_order_details,
@@ -21,12 +21,12 @@ TOOL_REGISTRY = {
 }
 
 
-def initialize_tools(
-    search_engine: DocumentSearch,
-) -> None:
-    TOOL_REGISTRY["doc_search"] = (
-        lambda **kwargs: doc_search(
-            search_engine=search_engine,
-            **kwargs,
-        )
-    )
+# def initialize_tools(
+#     search_engine: DocumentSearch,
+# ) -> None:
+#     TOOL_REGISTRY["doc_search"] = (
+#         lambda **kwargs: doc_search(
+#             search_engine=search_engine,
+#             **kwargs,
+#         )
+#     )
