@@ -612,6 +612,18 @@ def get_order_details(
 
     order_data = dict(order)
 
+    account = account_repository.get_by_id(
+        order_data["account_id"]
+    )
+
+    agreement = override_store.get_account(
+        order_data["account_id"]
+    )
+
+    agreement_source = get_agreement_source(
+        agreement
+    )
+
     return OrderDetailsResult(
         order_id=order_data["order_id"],
         account_id=order_data["account_id"],
@@ -634,4 +646,5 @@ def get_order_details(
         delivered_at=order_data.get(
             "delivered_at"
         ),
+        source=agreement_source,
     )

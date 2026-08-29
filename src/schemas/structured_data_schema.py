@@ -82,3 +82,4 @@ class OrderDetailsResult(BaseModel):
     pickup_window_start: str | None = None
     pickup_window_end: str | None = None
     delivered_at: str | None = None
+    source: str = "Customer Service Agreement"
